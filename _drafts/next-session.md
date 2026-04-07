@@ -1,73 +1,74 @@
 # TVG Next Session Bootstrap
 
-Read `CLAUDE.md` and `_drafts/semiring-fanout.md` first.
+Read `CLAUDE.md` first — it has the full dead-end catalog (27 hypotheses).
 
-## Where we left off (2026-04-05)
+## Where we are (end of 2026-04-06 session)
 
-### Proved
-- **Non-domination theorem**: M⁻ permutation → no row dominates another.
-  M⁺ → no column dominates. Cross edges alone span all pairs (A-A, B-B, A-B)
-  via 2-hop relay. This is the B-frame mechanism. (domination_proof.py)
-- **Cross-only spanning**: 100% across 670 random bicliques + all SM(k) k=3..8.
-  Internal edges are redundant. (cross_only_spanner.py)
-- **PivotEdge.lean corrected**: full-graph routing, NOT Angrick's biclique-only
-  pivot-edge. SM(k) has trivial pivot-sets under Angrick (Lemma 6.4).
+The 2n-3 temporal spanner conjecture. 27 hypotheses tested across two sessions. The proof gap is one lemma wide.
 
-### Double star construction (empirical, not proved)
-- M⁻ ∪ M⁺ ∪ star(row h) ∪ star(col c), with m⁺(h) = c.
-- Gives exactly 2n-4 edges for ALL SM(k) k=3..11 (SM(8)=29 was a search artifact).
-- 2 hub pairs suffice exhaustively through k=15. Zero failures.
-- Total ≤ 6k = 3n = O(n). (double_star.py, two_hub_exhaustive.py)
+### The construction
 
-### The gap: O(n) vs O(n log n)
-The proof reduces to one lemma: **the failure set of the double star
-construction is O(k), not O(k log k).**
+Star+tree: pick a hub vertex, connect it to all n-1 others (star), connect the remaining n-1 in a spanning tree (n-2 edges). Total: exactly 2n-3. Works 99.8% of instances through n=20. The 0.2% without a valid hub still have a non-star 2n-3 spanner.
 
-IVT argument: the minimum spanner cost lives between hub-only (4k, works
-~60% of the time) and all-I-frames (k², always works). Both endpoints
-exist. But IVT doesn't locate the minimum — it could be O(n) or O(n log n).
+### The proof tree
 
-The codec framing: each hub star is a GOP. Failures are chain breaks.
-I-frame patches fix breaks. The question is whether break density is O(1)
-per vertex or O(log k) per vertex.
+```
+spanner ≤ 2n-3
+├── dismount (Carnevale et al. 2025) ✓
+├── biclique characterization (Thm 3.10) ✓
+├── connected pair exists ← Lean, zero sorry ✓
+├── budget arithmetic ← proved (omega) ✓
+└── biclique spanner ≤ 4k-3 ← OPEN
+    ├── star+tree: works 99.8% ✓
+    └── non-star fallback: exists empirically, no proof
+```
 
-Empirically: break density is O(1). 2 hub pairs always suffice.
-Analytically: not proved.
+### Key findings from this session
 
-### What to try next
+1. **Sequential delegation kills the CPS log factor.** Parallel elimination overcounts (same collector missed by multiple emitters). Sequential: each collector missed exactly once (telescoping). Total O(n), not O(n log n).
 
-1. **Concordant pair bound.** For 2 hub columns c₁, c₂: how many ordered
-   pairs (i, i') have M[i][c₁] > M[i'][c₁] AND M[i][c₂] > M[i'][c₂]?
-   (Kendall tau concordance.) If this is O(k) for well-chosen columns,
-   the multi-hop rescue through hub rows closes the gap.
+2. **The conjecture is about one edge.** Lower bound = 2n-4 (packing). Upper = 2n-3. Most instances need 2n-4. Structured instances (identity, reverse permutation) hit 2n-3.
 
-2. **Multi-hop rescue analysis.** When 2-hop through hub columns fails
-   (concordant pair), the 4-hop a_i → b_{M⁻} → a_h → b_c → a_{i'} might
-   rescue. Prove this always works, or characterize when it fails.
+3. **Four structural antibodies kill every general technique:** asymmetry, non-locality, overcorrelation, no algebraic inverses.
 
-3. **Probabilistic argument.** Random hub columns have ~k(k-1)/4 concordant
-   pairs (expected). Is there always a pair of columns with O(k) concordant
-   pairs? Lovász Local Lemma or second moment method.
+4. **Minimal ≠ optimal.** Minimal spanners (no single edge removable) can exceed 2n-3 (n=7: size 13 > 11). Non-matroid signature.
 
-4. **Direct Lean formalization.** The non-domination theorem is 2 lines.
-   The double star construction is explicit. Formalize the construction
-   and reduce to the concordant pair lemma.
+5. **Landscape is mesa-shaped.** Lipschitz constant 1 (single swap → ±1 change). Flat at 2n-4 for most permutations, ridges at 2n-3 for structured ones.
+
+6. **The hub selection problem = the non-locality problem.** You can't find the right hub without global reachability queries. Same wall as H7/H11.
+
+## Unexplored leads (prioritized)
+
+### 1. Two-hub construction (HIGHEST PRIORITY)
+Previous session found: 2 hub pairs always suffice through k=15 on K_{k,k}. This session found star+tree works on K_n 99.8%. When one hub fails, do two hubs sharing the 2n-3 budget work? Test on K_n hub-less instances specifically.
+
+### 2. Sequential delegation as formal proof
+H26 showed telescoping gives O(n) total. The gap: the CPS biclique delegation model needs the precise timestamp compatibility accounting. H27 started this but the biclique model undercounts by ~40%. Finish the K_n accounting.
+
+### 3. Birthday bound on hub existence
+P(vertex v is a valid hub) = p(n). H27 found this is high but not 1. If p ≥ c/log(n), then P(no hub in n vertices) ≤ (1-c/log n)^n → 0. Prove p ≥ c/log n.
+
+### 4. Dismountability Revisited (Theorem 5.2)
+Claims recursively k-hop dismountable cliques admit 2n-3 spanners. Are ALL cliques recursively k-hop dismountable for bounded k? If yes, done.
+
+### 5. Characterize the 0.2% hub-less instances
+What structural property makes some K_n temporal cliques hub-less? If the property is rare enough (measure zero), an asymptotic argument suffices.
+
+### 6. Information-theoretic tightness
+Identity permutation needs exactly 2n-3. Characterize ALL tight instances. Is the set measure-zero in the space of timestamp assignments?
 
 ## Key files
 
-- `Tvg/PivotEdge.lean` — full-graph routing lemma (corrected)
-- `domination_proof.py` — non-domination verification + proof sketch
-- `cross_only_spanner.py` — cross-only spanning verification
-- `double_star.py` — double star construction on SM(k)
-- `double_star_general.py` — double star on random bicliques
-- `two_hub_exhaustive.py` — 2 hub pairs exhaustive search
-- `two_hub_proof.py` — hub count scaling analysis
-- `optimal_structure.py` — optimal spanner diagonal structure
-- `joint_diagonal.py` — joint diagonal optimization
-- `_drafts/semiring-fanout.md` — full research log (22 hypotheses, 13 dead)
+- `CLAUDE.md` — full dead-end catalog, alive findings, proof tree
+- `_drafts/farey-spanner.md` — session 2 research log (H1-H14)
+- `Tvg/ConnectedPair.lean` — the proved lemma (zero sorry)
+- `Tvg/PivotEdge.lean` — full-graph routing (corrected)
+- `double_star.py`, `two_hub_exhaustive.py` — two-hub construction from session 1
+- `/Users/junekim/Documents/june.kim/src/pages/reading/temporal-compression/ch-07/` — published chapter
+- `/Users/junekim/Documents/june.kim/src/data/proof-manual.yml` — proof technique index
 
 ## Key papers
 
-- Carnevale-Casteigts-Corsini 2025: arxiv:2502.01321 (dismountability)
-- Angrick et al ESA 2024: arxiv:2402.13624 (pivot-edge, reverted edges, SM(k))
-- Casteigts-Peters-Schoeters 2021: O(n log n) bound
+- Casteigts-Peters-Schoeters 2021 (arxiv:1810.00104): fireworks, O(n log n)
+- Angrick et al ESA 2024 (arxiv:2402.13624): pivot-edges, SM(k), O(n) classes
+- Carnevale-Casteigts-Corsini 2025 (arxiv:2502.01321): dismountability revisited
