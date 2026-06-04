@@ -101,6 +101,27 @@ Lean 4 v4.29.0. Config in `lakefile.toml`.
 - `matching_overlap.py` — M⁻ ∩ M⁺ overlap (almost never, kills naive budget)
 - `x3c_reduction.py` — X3C → temporal clique encoding attempt (failed, covering model wrong)
 - `greedy_vs_optimal.py` — greedy vs optimal rescue: proved covering model broken (~70% invalid)
+- `two_hub_kn.py` — double star on K_n (dead: fails 96% of hub-less)
+- `hubless_verify.py` — greedy vs exhaustive tree search (greedy inflates hub-less 10×)
+- `hubless_anatomy.py` — structural analysis of truly hub-less instances
+- `non_star_structure.py` — degree patterns of optimal non-star spanners
+- `forward_ratio_converse.py` — forward ratio tautology proof
+- `hubless_rate.py` — true hub-less rate across K_n (vanishes by n=8)
+- `birthday_bound.py` — set-cover analysis of hub rescue structure
+- `birthday_best_hub.py` — interactive greedy best-hub analysis
+- `adversarial_birthday.py` — adversarial minimize valid hubs
+- `scale1_rescue.py` — scale-1 rescue lemma test (3-hop relays)
+- `gap_analysis.py` — dead zone fraction by rank distance
+- `adversarial_gap.py` — adversarial scale-1 gap blocking
+- `deadzone_routes.py` — dead-zone routing and multi-hop mechanisms
+- `greedy_trace.py` — trace of greedy tree selection (LIVE vs DZ edges)
+- `live_edge_count.py` — LIVE edge degree per vertex
+- `live_floor.py` — adversarial min max LIVE degree (n-3 to n-4)
+- `floor_large_n.py` — LIVE floor at n=15,18,20
+- `median_floor.py` — direct construction via extreme edges (DZ ≈ n/2)
+- `optimal_pair.py` — structure of DZ=0 pairs
+- `domination_pair.py` — comparison of pair selection strategies
+- `deadzone_budget.py` — dead zone timestamp budget analysis
 
 ## Dead ends (don't retry)
 
@@ -228,17 +249,102 @@ Lean 4 v4.29.0. Config in `lakefile.toml`.
 - **4k-3 budget fails at k≥7** for random K_{k,k}. CPS conjecture is
   for K_n, not K_{k,k}. ~6% genuinely infeasible at k=4.
 - **Optimal K_{k,k} spanner size is O(k log k)**, not O(k).
-- **Sequential delegation kills the log factor (H22, H26).** CPS's
-  O(n log n) is overcounting from parallel elimination. Sequential
-  delegation: each collector missed exactly once (telescoping). Total
-  missed = |∪N| ≈ 0.865k. Within budget for all tested k ≤ 500.
+- **Sequential delegation does NOT kill the log factor (H26, CORRECTED
+  2026-04-07).** Root delegation tested: edges/k grows as log(k).
+  k=10: 2.86, k=20: 3.30, k=50: 4.33. The temporal filtering at each
+  relay vertex eats a constant fraction of the timestamp range, requiring
+  O(log k) doublings. H26's telescoping claim was wrong — missed
+  collectors are NOT shared across emitters. The CPS log factor is
+  STRUCTURAL for their delegation framework, not an analysis artifact.
+  A fundamentally different construction is needed for O(n).
+  (delegation_test.py)
 - **Star+tree construction (H27).** Pick hub, connect to all (n-1 edges),
-  spanning tree on rest (n-2 edges). Total: exactly 2n-3. Works 99.8%
-  of instances through n=20. The 0.2% without a valid hub still have a
-  non-star 2n-3 spanner. Conjecture confirmed exhaustively through n=12.
-- **The proof gap is one lemma wide.** Dismount → biclique → connected
-  pair → budget all proved. Missing: biclique spanner ≤ 4k-3 for the
-  0.2% hub-less instances. Star+tree nearly closes it.
+  spanning tree on rest (n-2 edges). Total: exactly 2n-3. Greedy tree
+  finds a valid hub for 99.8% of instances through n=20. Exhaustive tree
+  search resolves most greedy failures. Conjecture confirmed exhaustively
+  through n=12.
+- **True hub-less rate (2026-04-07).** Greedy tree inflates hub-less rate
+  10×. Exhaustive tree search: K_5=0%, K_6=0.026%, K_7=0.014%, K_8+=0%.
+  Hub-less phenomenon appears small-n only, vanishes by n=8.
+- **Hub-less instances are easier (2026-04-07).** Truly hub-less K_6
+  instances have optimal spanners of size 2n-4 (below conjecture bound).
+  Degree pattern [2,2,3,3,3,3], cycle rank 3. No hub needed — mesh works.
+- **M⁻ covers all A-A pairs, M⁺ covers all B-B pairs (2026-04-07,
+  proved).** In any extremally matched biclique: M⁻[j] = column min
+  is a permutation. Edge (m⁻(j), j) has min timestamp in column j, so
+  relay a_{m⁻(j)} → b_j → a_{i'} works for all i'. Similarly M⁺
+  covers all B-B pairs via row maxima. This is exact, not approximate.
+  Remaining gap: A-B/B-A pairs not directly in M⁻ ∪ M⁺.
+- **Double-star on extremally matched bicliques: 100% through k=9
+  (2026-04-07).** Star(row h) ∪ star(col c) = 2k-1 edges + 2k-2
+  relay edges = 4k-3 = budget. Greedy always fits within budget on
+  extremally matched bicliques. This is the correct target (from
+  dismount reduction), unlike random K_{k,k} which fails at k≥7.
+  (biclique_extremal.py)
+- **Three-timestamp median framework (2026-04-07, descriptive only).**
+  For triangle {h,v,w}: edge {v,w} is LIVE for hub h iff σ({v,w}) is
+  NOT the median of three timestamps. Average DZ degree = (n-2)/3.
+  Useful for understanding structure but doesn't yield a proof — the
+  Median Floor Conjecture (min DZ ≤ C) requires tools that don't exist
+  in the literature. See dead ends below.
+
+### Dead ends from 2026-04-07 session (birthday bound + median + biclique)
+
+**The fundamental wall:** every proof strategy that fixes a hop count fails.
+The adversary forces journey lengths that grow with n (or k). At K_{k,k}:
+max journey = 3-4 at k=3, 5-8 at k=8, growing as ~k. Any argument that
+reasons about k-hop relays for fixed k is dead. The proof must reason about
+GLOBAL reachability structure, not local relay conditions.
+
+**Proof strategies attempted and why they fail:**
+
+- **3-hop relay birthday bound** — adversary CAN put all non-star edges in
+  dead zones (T_a < τ < T_b). Route A and Route B both fail completely.
+  Verified: K_4 admits full dead-zone assignment. 3-hop analysis gives the
+  adversary too much power. (deadzone_routes.py)
+- **4-hop relay on bicliques** — works for small k but hop count grows.
+  Max journey in K_{k,k} spanner: 4 at k=3, 6 at k=4, 8 at k=5, 9 at k=6.
+  Any fixed-hop argument is a dead end. (journey_lengths.py)
+- **Sequential delegation / CPS improvement** — root delegation gives
+  Θ(k log k), NOT O(k). The log is structural: temporal filtering at relay
+  vertices consumes O(1/log k) fraction of timestamp range per step,
+  requiring O(log k) steps. H26 telescoping was wrong — missed collectors
+  aren't shared. CPS framework cannot yield O(n). (delegation_test.py)
+- **K-early+late construction (K=3, ~5n edges)** — 100% empirical success
+  through n=30 but unprovable. The 4-hop analysis only covers 20% of
+  backward pairs; the rest use multi-hop chains of unbounded length.
+  Same wall as every other approach. (cn_spanner.py, prove_5n.py)
+- **Induction on k (add row+column)** — budget increase is 4 edges per
+  step. Works 100% at k=5,6 but avg extra edges grows as k². At k=10:
+  avg=45, max=121. The adversary can make the new row/column expensive
+  to integrate because the base spanner isn't extension-compatible.
+  (induction_test.py, induction_scale.py)
+- **Median Floor Conjecture** — clean statement (∃ (h,v) with DZ ≤ C) but
+  unprovable with current tools. Average DZ = (n-2)/3 (proved by double
+  counting). Min DZ ≤ 2 empirically. But no extremal argument closes the
+  gap from average to minimum. Tree domination literature too thin.
+  Complementarity DZ(h,v)+DZ(v,h)=n-2 gives min ≤ (n-2)/2, far from ≤ 2.
+  (median_floor.py, live_floor.py, optimal_pair.py, domination_pair.py)
+- **LIVE degree floor = n-O(1)** — empirically n-3 to n-4, but "empirical"
+  doesn't help. The adversary can push max LIVE to n-4 at K_18.
+  (floor_large_n.py, live_edge_count.py)
+- **Dismountability revisited (Theorem 5.2)** — recursively k-hop
+  dismountable → pivotable → 2n-3. But NOT all cliques are k-hop
+  dismountable (explicit counterexamples, Thm 3.10). The gap remains
+  at the biclique spanner ≤ 4k-3 lemma. (arxiv:2502.01321)
+- **Forward ratio / star coverage** — both always exactly 50% for any
+  vertex in any K_n. Tautologies. Not diagnostic. (forward_ratio_converse.py)
+- **Double star on K_n** — star(h1) ∪ star(h2) = 2n-3 edges (exactly at
+  budget). Fails 96% of hub-less K_7 instances. All routing forced through
+  h1/h2; no flexibility for non-hub-to-non-hub paths. Budget fully consumed
+  by stars, zero tree edges. (two_hub_kn.py)
+- **Forward ratio as hub-less diagnostic** — forward ratio (fraction of
+  pairs routable via 2-hop through v) is ALWAYS exactly 50% for every
+  vertex in every K_n with distinct timestamps. It's a tautology from
+  C(n-1,2)/(n-1)(n-2) = 1/2. Not informative. (forward_ratio_converse.py)
+- **Star 2-hop coverage** — also always exactly 50% (10/20 at K_6).
+  Every hub covers exactly the same number of pairs via direct star routing.
+  The distinguishing factor is tree compatibility, not star coverage.
 
 ### Findings that are alive but don't close the gap
 

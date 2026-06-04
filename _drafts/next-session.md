@@ -1,71 +1,82 @@
 # TVG Next Session Bootstrap
 
-Read `CLAUDE.md` first — it has the full dead-end catalog (27 hypotheses).
+Read `CLAUDE.md` first — full dead-end catalog (40+ hypotheses across 4 sessions).
 
-## Where we are (end of 2026-04-06 session)
+## Where we are (end of 2026-04-07, session 4)
 
-The 2n-3 temporal spanner conjecture. 27 hypotheses tested across two sessions. The proof gap is one lemma wide.
+The 2n-3 temporal spanner conjecture remains open. Four sessions, 40+ hypotheses tested. The proof gap is understood but unsolved.
 
-### The construction
+### The fundamental wall
 
-Star+tree: pick a hub vertex, connect it to all n-1 others (star), connect the remaining n-1 in a spanning tree (n-2 edges). Total: exactly 2n-3. Works 99.8% of instances through n=20. The 0.2% without a valid hub still have a non-star 2n-3 spanner.
+Every proof strategy that fixes a hop count fails. The adversary forces journey lengths that grow with n (or k). Proved: max journey in K_{k,k} spanner grows as ~k. Therefore:
 
-### The proof tree
+- **Local arguments are dead.** Any proof that reasons about k-hop relays for fixed k fails.
+- **The proof must reason about GLOBAL reachability.** The correct argument must capture how the entire edge set composes into journeys of unbounded length.
 
-```
-spanner ≤ 2n-3
-├── dismount (Carnevale et al. 2025) ✓
-├── biclique characterization (Thm 3.10) ✓
-├── connected pair exists ← Lean, zero sorry ✓
-├── budget arithmetic ← proved (omega) ✓
-└── biclique spanner ≤ 4k-3 ← OPEN
-    ├── star+tree: works 99.8% ✓
-    └── non-star fallback: exists empirically, no proof
-```
+### What IS proved (formally)
 
-### Key findings from this session
+1. Dismount reduction to biclique (Carnevale et al. 2025)
+2. Biclique characterization: V⁻/V⁺ with M⁻/M⁺ permutation matchings (Thm 3.10)
+3. Connected pair exists in any biclique (Lean, zero sorry)
+4. Budget arithmetic: 2d + 4k-4 ≤ 2n-3 (omega)
+5. M⁻ covers all A-A pairs, M⁺ covers all B-B pairs (session 4)
+6. Cross-only spanning: cross edges alone span all pairs (session 2)
+7. Three-timestamp median: DZ characterization and double-counting identity
 
-1. **Sequential delegation kills the CPS log factor.** Parallel elimination overcounts (same collector missed by multiple emitters). Sequential: each collector missed exactly once (telescoping). Total O(n), not O(n log n).
+### What is NOT proved (the gap)
 
-2. **The conjecture is about one edge.** Lower bound = 2n-4 (packing). Upper = 2n-3. Most instances need 2n-4. Structured instances (identity, reverse permutation) hit 2n-3.
+**Biclique spanner ≤ 4k-3** for extremally matched K_{k,k}. Equivalently: 2k-3 relay edges suffice beyond the M⁻ ∪ M⁺ essential edges.
 
-3. **Four structural antibodies kill every general technique:** asymmetry, non-locality, overcorrelation, no algebraic inverses.
+This is the SAME gap from session 1. All approaches from sessions 2-4 either:
+- Reduce to this same gap (dismountability, birthday bound)
+- Hit the hop-count wall (relay analysis, median floor)
+- Describe but don't bound (tropical semiring, three-timestamp framework)
 
-4. **Minimal ≠ optimal.** Minimal spanners (no single edge removable) can exceed 2n-3 (n=7: size 13 > 11). Non-matroid signature.
+### Dead-end summary by approach class
 
-5. **Landscape is mesa-shaped.** Lipschitz constant 1 (single swap → ±1 change). Flat at 2n-4 for most permutations, ridges at 2n-3 for structured ones.
+**Hub-based constructions:** Star+tree works empirically (99.8%+) but can't prove hub always exists. Double star fails. Greedy tree is suboptimal (inflates failure rate 10×). Birthday bound works for random timestamps but not adversarial.
 
-6. **The hub selection problem = the non-locality problem.** You can't find the right hub without global reachability queries. Same wall as H7/H11.
+**Relay analysis (fixed hop):** 3-hop relays can be fully blocked by adversary (dead-zone world). 4-hop works for small k but hop count grows. Any fixed-hop proof is dead.
 
-## Unexplored leads (prioritized)
+**Algebraic/semiring:** Tropical semiring describes composition correctly. Lifted Kleene star computes reachability. But no rank-nullity → no edge count bound. Algebraic rank approaches dead (no additive inverses).
 
-### 1. Two-hub construction (HIGHEST PRIORITY)
-Previous session found: 2 hub pairs always suffice through k=15 on K_{k,k}. This session found star+tree works on K_n 99.8%. When one hub fails, do two hubs sharing the 2n-3 budget work? Test on K_n hub-less instances specifically.
+**Combinatorial:** Matroid theory dead (non-matroid structure). Exchange arguments dead. Covering design wrong model. Charging-discharging gives O(n) but not 2n-3.
 
-### 2. Sequential delegation as formal proof
-H26 showed telescoping gives O(n) total. The gap: the CPS biclique delegation model needs the precise timestamp compatibility accounting. H27 started this but the biclique model undercounts by ~40%. Finish the K_n accounting.
+**Probabilistic:** Birthday bound over hub choice gives exponentially small failure for random timestamps. Doesn't handle adversarial. LLL/FKG needs independence structure that doesn't exist.
 
-### 3. Birthday bound on hub existence
-P(vertex v is a valid hub) = p(n). H27 found this is high but not 1. If p ≥ c/log(n), then P(no hub in n vertices) ≤ (1-c/log n)^n → 0. Prove p ≥ c/log n.
+### What's still alive
 
-### 4. Dismountability Revisited (Theorem 5.2)
-Claims recursively k-hop dismountable cliques admit 2n-3 spanners. Are ALL cliques recursively k-hop dismountable for bounded k? If yes, done.
+1. **Double-star on extremally matched bicliques: 100% through k=9.** The construction works. The proof doesn't follow.
 
-### 5. Characterize the 0.2% hub-less instances
-What structural property makes some K_n temporal cliques hub-less? If the property is rare enough (measure zero), an asymptotic argument suffices.
+2. **Sequential delegation (H26): 0.865k total missed.** Within budget for all k ≤ 500. The formal bound on the missed count is the closest to a proof of any approach. Needs: rigorous bound on |∪N| in the CPS delegation model.
 
-### 6. Information-theoretic tightness
-Identity permutation needs exactly 2n-3. Characterize ALL tight instances. Is the set measure-zero in the space of timestamp assignments?
+3. **M⁻/M⁺ completeness: proved.** A-A and B-B pairs are fully covered by the essential matchings. Only A-B relay routing remains.
+
+4. **Three-timestamp median framework: descriptive.** Average DZ = (n-2)/3 is exact. Useful for understanding structure. Doesn't yield a bound.
+
+5. **Best-response dynamics (H10): publishable independently.** First distributed temporal spanner construction. Not a proof of the conjecture.
+
+### Possible next directions
+
+1. **Formalize sequential delegation bound.** The 0.865k figure is empirical. If the union bound on missed collectors can be made rigorous with the right concentration inequality, it might close the gap for the biclique.
+
+2. **Seek external tools.** The problem might need techniques from: discrepancy theory, Ramsey theory, topological combinatorics, or communication complexity. The structure (permutation matchings on bicliques) connects to permutation patterns, Birkhoff polytope, Latin squares.
+
+3. **Weaken the target.** Proving O(n) spanners (not 2n-3) would still improve the literature (CPS gives O(n log n)). The sequential delegation + union bound might give this.
+
+4. **Write up the empirical contribution.** The dead-end catalog, the three-timestamp framework, the LIVE/DZ decomposition, and the journey-length growth result are all publishable observations that advance understanding even without the proof.
 
 ## Key files
 
-- `CLAUDE.md` — full dead-end catalog, alive findings, proof tree
-- `_drafts/farey-spanner.md` — session 2 research log (H1-H14)
-- `Tvg/ConnectedPair.lean` — the proved lemma (zero sorry)
-- `Tvg/PivotEdge.lean` — full-graph routing (corrected)
-- `double_star.py`, `two_hub_exhaustive.py` — two-hub construction from session 1
-- `/Users/junekim/Documents/june.kim/src/pages/reading/temporal-compression/ch-07/` — published chapter
-- `/Users/junekim/Documents/june.kim/src/data/proof-manual.yml` — proof technique index
+- `CLAUDE.md` — full catalog (40+ hypotheses, dead ends, alive findings)
+- `biclique_extremal.py` — double-star on extremally matched bicliques (100%)
+- `journey_lengths.py` — journey hop counts grow with k
+- `live_floor.py` — LIVE degree floor analysis
+- `deadzone_routes.py` — dead-zone routing mechanisms
+- `gap_analysis.py` — dead-zone width by rank distance
+- `biclique_live.py` — LIVE/DZ framework on bicliques
+- `_drafts/birthday-proof-sketch.md` — birthday bound proof sketch
+- `_drafts/birthday-bound.md` — birthday bound analysis
 
 ## Key papers
 
