@@ -21,9 +21,13 @@ gap, and 2n-3 is untouched by her proof.
 Faithful re-implementation of her construction, oracle-checked for reachability:
 - Her construction actually runs at **~2.3n** on random temporal cliques
   (n≤48), not 7n — the published bound is ~3.7× loose.
-- **Greedy-pruning her spanner lands in [2n-4, 2n-3] on 100% of random cliques
-  through n=48** (pr.max never exceeds 2n-3). With our exhaustive n≤12, the
-  2n-3 conjecture looks robust and tight.
+- **Greedy-pruning her spanner lands in [2n-4, 2n-3] on every random clique
+  tested through n=48** (pr.max never exceeds 2n-3). Epistemic status: this is
+  *failed falsification*, not confirmation — a pruned spanner above 2n-3 would
+  have disproved the conjecture; none appeared on these RANDOM instances ≤ n=48.
+  It proves nothing about n>48 or about adversarial instances (the only ones a
+  worst-case claim turns on, and the ones random sampling cannot find). Greedy
+  prune also only upper-bounds OPT, so it cannot speak to tightness.
 - Our double-star beats her construction where it is valid (SM(k): ~2n vs ~2.5n)
   but is not general (0% valid on random bicliques past k=4). Hers is universal
   but loose; neither is both tight and general — that is the open slot.

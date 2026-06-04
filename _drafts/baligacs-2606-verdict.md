@@ -29,9 +29,14 @@ Faithful re-implementation, every spanner oracle-checked:
 1. **The 7n bound is ~3.7× loose.** Her construction emits ~2.3n on random
    temporal cliques (n≤48), ~2.5n on the extremal SM(k) biclique.
 
-2. **Greedy-pruned ∈ [2n-4, 2n-3] on 100% of random cliques through n=48.**
+2. **Greedy-pruned ∈ [2n-4, 2n-3] on every random clique tested through n=48.**
    pr.max never exceeds 2n-3; pr.min frequently hits the 2n-4 gossip floor.
-   Strong evidence the 2n-3 conjecture is robust and tight (with exhaustive n≤12).
+   Epistemic status: *failed falsification*, not confirmation. A pruned spanner
+   above 2n-3 would have disproved the conjecture; none appeared. Empirics cannot
+   prove a universal — they only disprove. So this rules out nothing beyond the
+   tested RANDOM instances ≤ n=48, and says nothing about adversarial instances
+   (where a worst-case claim lives) or about tightness (greedy prune only
+   upper-bounds OPT).
 
 3. **Double-star is tighter but not general.** On SM(k) it gives exactly 2n-4
    (= 4k-4), beating her ~2.5n; on random bicliques its validity collapses to
