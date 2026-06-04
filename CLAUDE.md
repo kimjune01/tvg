@@ -1,9 +1,42 @@
-# TVG: Temporal Spanner O(n) Conjecture
+# TVG: Temporal Spanner — the tight constant
 
 Every temporal clique K_n has a spanner with ≤ 2n-3 edges.
-Open conjecture (Casteigts-Peters-Schoeters 2021).
+Conjecture (Casteigts-Peters-Schoeters 2021). Lower bound 2n-4 (gossip, Bumby 1981).
 
-## Status
+## The O(n) question is CLOSED (not by us)
+
+Baligács, "Temporal Cliques Admit Linear Spanners" (arXiv:2606.05156, 3 Jun 2026)
+proves every temporal clique admits a spanner of size **7n**, resolving the
+CPS Question 1 (does an O(n) spanner exist?) that this project was built to attack.
+Her route is the same skeleton we built (clique→biclique, dismountability,
+extremally-matched core, star+matching) plus the piece we never found:
+**extended stars** (a simple star bundled with a linear subset of appendable
+paths) that handle the intermediate regime our notes flagged as the wall.
+
+**What is still open: the TIGHT constant.** Her 7n vs the 2n-4 floor is a wide
+gap, and 2n-3 is untouched by her proof.
+
+### Our verified evidence (see `baligacs_construction.py`, `baligacs_clique.py`)
+
+Faithful re-implementation of her construction, oracle-checked for reachability:
+- Her construction actually runs at **~2.3n** on random temporal cliques
+  (n≤48), not 7n — the published bound is ~3.7× loose.
+- **Greedy-pruning her spanner lands in [2n-4, 2n-3] on 100% of random cliques
+  through n=48** (pr.max never exceeds 2n-3). With our exhaustive n≤12, the
+  2n-3 conjecture looks robust and tight.
+- Our double-star beats her construction where it is valid (SM(k): ~2n vs ~2.5n)
+  but is not general (0% valid on random bicliques past k=4). Hers is universal
+  but loose; neither is both tight and general — that is the open slot.
+
+### New front (replaces the dead fixed-hop program)
+
+The greedy prune is a *deterministic* algorithm that empirically reduces her
+7n-proven spanner to 2n-3 on every instance. Candidate proof route to the tight
+conjecture: **characterize the removable redundancy in a Baligács/extended-star
+spanner and show it always reduces to 2n-3.** More concrete than any fixed-hop
+relay approach (all dead — see below).
+
+## Status (pre-Baligács, retained for the dead-end catalog)
 
 The proof reduces to one algebraic lemma about the tropical semiring.
 Everything else is either proved or in the literature.
